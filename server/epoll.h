@@ -4,16 +4,17 @@
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
-class epoll
+class Epoll
 {
 private:
     int epfd;   //指向监听红黑树根节点的文件描述符
+    struct EventInfo;
     bool create(int size);               //创建监听红黑树
 
 public:
-    epoll();
-    epoll(int size);                     //size:监听节点数量
-    ~epoll();
+    Epoll();
+    Epoll(int size);                     //size:监听节点数量
+    ~Epoll();
     bool add(epoll_event *events);//添加fd到监听红黑树上
     bool del(epoll_event *events);//摘除fd到监听红黑树上
     bool mod(epoll_event *events);//修改监听红黑树上的fd

@@ -1,29 +1,30 @@
 #include "server.h"
-#include "epoll.h"
 
 
 using namespace std;
-server::server()
+Server::Server()
 {
     listenFd = -1;
 }
-server::~server() { // 添加析构函数定义
+Server::~Server() { // 添加析构函数定义
     if (listenFd != -1) {
         close(listenFd);
     }
 }
-void server::listenEvent(){
+void Server::listenEvent(){
     createSocket();
     bindSocket();
     setListen(OPEN_MAX);
-    myEpoll = new epoll(OPEN_MAX);                        //初始化 epoll 监听红黑树
+    myEpoll = new Epoll(OPEN_MAX);                        //初始化 epoll 监听红黑树
     tempEvent->events = EPOLLIN | EPOLLET;
     tempEvent->data.fd = listenFd;
     myEpoll->add(tempEvent);
 }
     
-void server::start(){
+void Server::start(){
     listenEvent();
+    //反应堆模型
+
     while(1){
         nReady = myEpoll->wait(OPEN_MAX, events, TIME_OUT);
         if(nReady == 0) continue;
@@ -57,7 +58,7 @@ void server::start(){
         }
     }
 }
-bool server::createSocket(){
+bool Server::createSocket(){
     listenFd = socket(AF_INET, SOCK_STREAM, 0);
     if(listenFd == -1){
         cerr << "socket error" << strerror(errno) << endl;
@@ -65,7 +66,7 @@ bool server::createSocket(){
     }
     return true;
 }
-bool server::bindSocket(){
+bool Server::bindSocket(){
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(8080);
     serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -75,7 +76,7 @@ bool server::bindSocket(){
     }
     return true;
 }
-bool server::setListen(int backlog){
+bool Server::setListen(int backlog){
     if(listen(listenFd, backlog) == -1){
         cerr << "listen error" << strerror(errno) << endl;
         return false;
