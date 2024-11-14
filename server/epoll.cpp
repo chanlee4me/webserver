@@ -5,12 +5,10 @@ Epoll::Epoll()
     epfd = -1;
 }
 Epoll::Epoll(int size)
-{
-    if(!create(size)){
-        cerr << "epoll_create error:" << strerror(errno) << endl;
-    }
+{   //构造监听红黑树
+    create(size);
 }
-Epoll::~Epoll() { // 添加析构函数定义
+Epoll::~Epoll() { 
     if (epfd != -1) {
         close(epfd);
     }
@@ -25,34 +23,47 @@ bool Epoll::create(int size){
     return true;
 }
 
-bool Epoll::add(epoll_event *events){
-    //添加fd到监听红黑树上
-    if(epoll_ctl(epfd, EPOLL_CTL_ADD, events->data.fd, events) == -1){
-        cerr << "epoll_ctl add error:" << strerror(errno) << endl;
-        return false;
+bool Epoll::addEvent(int events, EventInfo* eventInfo){
+    epoll_event epollEvent;
+    epollEvent.data.ptr = eventInfo;
+    epollEvent.events = eventInfo->events = events;
+    if(eventInfo->status == 1){
+        cerr << "eventAdd error: the fd has been added" << endl;
+    }else{
+        if(epoll_ctl(epfd, EPOLL_CTL_ADD, eventInfo->fd, &epollEvent) == -1){
+            cerr << "epoll_ctl add error:" << strerror(errno) << endl;
+            return false;
+        }
+        eventInfo->status = 1;
+        eventInfo->lastActive = time(NULL);
     }
+    //添加fd到监听红黑树上
     return true;
 }
 
-bool Epoll::del(epoll_event *events){
-    //摘除fd到监听红黑树上
-    if(epoll_ctl(epfd, EPOLL_CTL_DEL, events->data.fd, events) == -1){
+bool Epoll::delEvent(EventInfo* eventInfo){
+    //摘除监听红黑树上的fd
+    if(epoll_ctl(epfd, EPOLL_CTL_DEL, eventInfo->fd, NULL) == -1){
         cerr << "epoll_ctl del error:" << strerror(errno) << endl;
         return false;
     }
+    eventInfo->status = 0;  //状态为 0 标志着不在监听态
     return true;
 }
 
-bool Epoll::mod(epoll_event *events){
+bool Epoll::modEvent(int events, EventInfo* eventInfo){
+    epoll_event epollEvent;
+    epollEvent.data.ptr = eventInfo;
+    epollEvent.events = eventInfo->events = events;
     //修改监听红黑树上的fd
-    if(epoll_ctl(epfd, EPOLL_CTL_MOD, events->data.fd, events) == -1){
+    if(epoll_ctl(epfd, EPOLL_CTL_MOD, eventInfo->fd, &epollEvent) == -1){
         cerr << "epoll_ctl mod error:" << strerror(errno) << endl;
         return false;
     }
     return true;
 }
 
-int Epoll::wait(int maxEvents, epoll_event* events, int timeout){
+int Epoll::waitEvent(int maxEvents, epoll_event* events, int timeout){
     /*
         阻塞监听红黑树上的事件
         n > 0 满足监听的总个数；n == 0 无fd满足监听事件； n < 0 失败
@@ -61,6 +72,14 @@ int Epoll::wait(int maxEvents, epoll_event* events, int timeout){
     if(n == -1){
         cerr << "epoll_wait error:" << strerror(errno) << endl;
         return -1;
+    }
+    for(int i = 0; i < n; i++){//处理所有监听到的事件
+        EventInfo* eventInfo = static_cast<EventInfo*>(events[i].data.ptr);
+        if(eventInfo->events & EPOLLIN){
+            eventInfo->callBack(eventInfo->arg);
+        }else if(eventInfo->events & EPOLLOUT){
+            eventInfo->callBack(eventInfo->arg);
+        }
     }
     return n;
 }
