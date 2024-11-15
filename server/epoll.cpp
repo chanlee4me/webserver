@@ -24,13 +24,14 @@ bool Epoll::create(int size){
 }
 
 bool Epoll::addEvent(int events, EventInfo* eventInfo){
-    epoll_event epollEvent;
-    epollEvent.data.ptr = eventInfo;
-    epollEvent.events = eventInfo->events = events;
+    epoll_event tempEvent;
+    tempEvent.events = events;
+    tempEvent.data.ptr = eventInfo;
+    eventInfo->events = events;
     if(eventInfo->status == 1){
         cerr << "eventAdd error: the fd has been added" << endl;
     }else{
-        if(epoll_ctl(epfd, EPOLL_CTL_ADD, eventInfo->fd, &epollEvent) == -1){
+        if(epoll_ctl(epfd, EPOLL_CTL_ADD, eventInfo->fd, &tempEvent) == -1){
             cerr << "epoll_ctl add error:" << strerror(errno) << endl;
             return false;
         }
@@ -52,11 +53,12 @@ bool Epoll::delEvent(EventInfo* eventInfo){
 }
 
 bool Epoll::modEvent(int events, EventInfo* eventInfo){
-    epoll_event epollEvent;
-    epollEvent.data.ptr = eventInfo;
-    epollEvent.events = eventInfo->events = events;
+    epoll_event tempEvent;
+    tempEvent.data.ptr = eventInfo;
+    tempEvent.events = eventInfo->events = events;
+    eventInfo->events = events;
     //修改监听红黑树上的fd
-    if(epoll_ctl(epfd, EPOLL_CTL_MOD, eventInfo->fd, &epollEvent) == -1){
+    if(epoll_ctl(epfd, EPOLL_CTL_MOD, eventInfo->fd, &tempEvent) == -1){
         cerr << "epoll_ctl mod error:" << strerror(errno) << endl;
         return false;
     }

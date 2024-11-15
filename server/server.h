@@ -1,12 +1,14 @@
 #ifndef SERVER_H
 #define SERVER_H
-#include <cstring>
-#include <netinet/in.h> // for sockaddr_in
+#include "epoll.h"
 #include "sys/socket.h"
+#include <cstring>
 #include <iostream>
 #include <unistd.h>
-#include "epoll.h"
+#include <stdio.h>
+#include <arpa/inet.h>
 #include <functional> // For std::function and std::bind
+#include <netinet/in.h> // for sockaddr_in
 #define TIME_OUT 5000
 #define MAX_EVENTS 1024
 class Server
@@ -19,6 +21,7 @@ private:
     epoll_event events[OPEN_MAX];   //指向epoll就绪事件的数组
     int nReady;                     //epoll成功监听到的事件数
     Epoll::EventInfo myEvents[MAX_EVENTS + 1]; //用于反应堆的结构体数组 
+    int flag;                       //标志位--指定模式
                 
 public:
     Server();
@@ -31,7 +34,7 @@ public:
     void start();                   //启动服务器
     void reactor();                 //反应堆模型
     
-    void setEventInfo(Epoll::EventInfo* eventInfo, int fd, std::function<void(void*)> callBack, void* arg);  //设置EventInfo结构体变量
+    void setEventInfo(Epoll::EventInfo* eventInfo, int fd, std::function<void(void*)> callBack, void* arg, bool init = false);  //设置EventInfo结构体变量
     void recvData(void* arg); //接收数据
     void sendData(void* arg); //发送数据
 };
