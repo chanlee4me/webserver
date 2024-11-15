@@ -78,6 +78,8 @@ int Epoll::waitEvent(int maxEvents, epoll_event* events, int timeout){
     for(int i = 0; i < n; i++){//处理所有监听到的事件
         EventInfo* eventInfo = static_cast<EventInfo*>(events[i].data.ptr);
         if(eventInfo->events & EPOLLIN){
+            //唤醒工作线程处理读事件
+            
             eventInfo->callBack(eventInfo->arg);
         }else if(eventInfo->events & EPOLLOUT){
             eventInfo->callBack(eventInfo->arg);
