@@ -1,11 +1,17 @@
-src_server = $(wildcard server/*.cpp)
-src_local = $(wildcard *.cpp)
-src = $(src_server) $(src_local)
+src_dirs = server threadPool .
+exclude_dirs = test
+exclude_files = threadPool/test_threadPool.cpp
 
-obj_server = $(patsubst server/%.cpp, server/%.o, $(src_server))
-obj_local = $(patsubst %.cpp, %.o, $(src_local))
+# 获取所有源文件
+src = $(foreach dir, $(src_dirs), $(wildcard $(dir)/*.cpp))
 
-obj = $(obj_server) $(obj_local)
+# 排除指定的目录和文件
+src := $(filter-out $(foreach dir, $(exclude_dirs), $(wildcard $(dir)/*.cpp)), $(src))
+src := $(filter-out $(exclude_files), $(src))
+
+obj = $(patsubst %.cpp, %.o, $(src))
+
+obj = $(patsubst %.cpp, %.o, $(src))
 
 ALL: webserver
 
@@ -13,9 +19,6 @@ webserver: $(obj)
 	g++ -g -o $@ $^
 
 %.o: %.cpp
-	g++ -g -c $< -o $@
-
-server/%.o: server/%.cpp
 	g++ -g -c $< -o $@
 
 clean:

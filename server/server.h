@@ -2,12 +2,13 @@
 #define SERVER_H
 #include "epoll.h"
 #include "sys/socket.h"
+#include "../threadPool/threadPool.h"
+#include <stdio.h>
 #include <cstring>
 #include <iostream>
 #include <unistd.h>
-#include <stdio.h>
-#include <arpa/inet.h>
 #include <functional> // For std::function and std::bind
+#include <arpa/inet.h>
 #include <netinet/in.h> // for sockaddr_in
 #define TIME_OUT 5000
 #define MAX_EVENTS 1024
@@ -23,6 +24,8 @@ private:
     Epoll::EventInfo myEvents[MAX_EVENTS + 1]; //用于反应堆的结构体数组 
     int flag;                       //标志位--指定模式
                 
+    ThreadPool* threadPool;         //线程池对象
+    
 public:
     Server();
     ~Server();

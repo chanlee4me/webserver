@@ -6,6 +6,8 @@ Server::Server()
 {
     listenFd = -1;
     tempEvent = new epoll_event;
+    myEpoll = new Epoll(OPEN_MAX);                        //初始化epoll监听红黑树
+    threadPool = new ThreadPool();                        //初始化线程池
 }
 Server::~Server() { // 添加析构函数定义
     if (listenFd != -1) {
@@ -19,7 +21,6 @@ void Server::initListen(){
     setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, (void *)&opt, sizeof(opt));
     bindSocket();
     setListen(OPEN_MAX);
-    myEpoll = new Epoll(OPEN_MAX);                        //初始化epoll监听红黑树
     int events = EPOLLIN | EPOLLET;
     bool init = true;
     setEventInfo(&myEvents[OPEN_MAX], listenFd, bind(&Server::acceptConnect, this), &myEvents[OPEN_MAX], init); //设置回调函数和监听的fd
@@ -46,9 +47,12 @@ void Server::acceptConnect(){
             close(connectFd);
             break;
         }
+    
         setEventInfo(&myEvents[i], connectFd, bind(&Server::recvData, this, std::placeholders::_1), &myEvents[i]);//设置回调函数和监听的fd
         tempEvent->events = EPOLLIN | EPOLLET;
         myEpoll->addEvent(tempEvent->events, &myEvents[i]);           //将监听事件挂到红黑树上
+        /* 添加任务到任务队列 */
+        threadPool->addTask(bind(&Server::recvData, this, std::placeholders::_1), &myEvents[i]); 
     }while(0);
 
 }           
@@ -104,7 +108,7 @@ void Server::setEventInfo(Epoll::EventInfo* eventInfo, int fd, std::function<voi
         memset(eventInfo->buf, 0, sizeof(eventInfo->buf));
     eventInfo->lastActive = time(NULL);
 }
-
+/* 接收数据 */
 void Server::recvData(void* arg){
     Epoll::EventInfo* eventInfo = static_cast<Epoll::EventInfo*>(arg);
     int len = read(eventInfo->fd, eventInfo->buf, sizeof(eventInfo->buf));
@@ -121,6 +125,8 @@ void Server::recvData(void* arg){
         int events = EPOLLOUT | EPOLLET;
         setEventInfo(eventInfo, eventInfo->fd, bind(&Server::sendData, this, std::placeholders::_1), eventInfo);
         myEpoll->addEvent(events, eventInfo);
+        /* 添加任务到任务队列 */
+        threadPool->addTask(bind(&Server::sendData, this, std::placeholders::_1), eventInfo); 
     }
 }
 void Server::sendData(void* arg){ //发送数据
@@ -141,6 +147,8 @@ void Server::sendData(void* arg){ //发送数据
         int events = EPOLLIN | EPOLLET;
         setEventInfo(eventInfo, eventInfo->fd, bind(&Server::recvData, this, std::placeholders::_1), eventInfo);
         myEpoll->addEvent(events, eventInfo);
+        /* 添加任务到任务队列 */
+        threadPool->addTask(bind(&Server::recvData, this, std::placeholders::_1), eventInfo); 
     }
     return;
 }
