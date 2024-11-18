@@ -28,16 +28,25 @@ class ThreadPool {
         deque<threadpoolTask> taskQueue;  // 任务队列
     
         const int MIN_THREAD_SIZE;      // 线程池中最小线程数
-        int maxThreadSize;      // 线程池中最大线程数
+        const int maxThreadSize;      // 线程池中最大线程数
         int liveThreadNum;      // 线程池中存活的线程数
         int busyThreadNum;      // 线程池中正在工作的线程数
         int waitExitThreadNum;  // 等待销毁的线程数
     
-        int taskQueueMaxSize;  // 任务队列中可容纳任务数上限
+        const int taskQueueMaxSize;  // 任务队列中可容纳任务数上限
     
         bool isRunning;  // 线程池是否运行
     
-        ThreadPoolData() : MIN_THREAD_SIZE(2) {} // Add a default constructor
+        ThreadPoolData() 
+            :   adjustThreadId(1),
+                MIN_THREAD_SIZE(2), 
+                maxThreadSize(4), 
+                liveThreadNum(0), 
+                busyThreadNum(0), 
+                waitExitThreadNum(0), 
+                taskQueueMaxSize(100), 
+                isRunning(true)      
+        {}
     };
     
     ThreadPoolData *threadPoolData;

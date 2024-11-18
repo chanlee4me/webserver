@@ -65,7 +65,7 @@ bool Epoll::modEvent(int events, EventInfo* eventInfo){
     return true;
 }
 
-int Epoll::waitEvent(int maxEvents, epoll_event* events, int timeout){
+int Epoll::waitEvent(ThreadPool *threadPool, int maxEvents, epoll_event* events, int timeout){
     /*
         阻塞监听红黑树上的事件
         n > 0 满足监听的总个数；n == 0 无fd满足监听事件； n < 0 失败
@@ -78,10 +78,11 @@ int Epoll::waitEvent(int maxEvents, epoll_event* events, int timeout){
     for(int i = 0; i < n; i++){//处理所有监听到的事件
         EventInfo* eventInfo = static_cast<EventInfo*>(events[i].data.ptr);
         if(eventInfo->events & EPOLLIN){
-            //唤醒工作线程处理读事件
-            eventInfo->callBack(eventInfo->arg);
+            //将监听到的事件添加到任务队列中
+            threadPool->addTask(eventInfo->callBack, eventInfo->arg);
         }else if(eventInfo->events & EPOLLOUT){
-            eventInfo->callBack(eventInfo->arg);
+            //将监听到的事件添加到任务队列中
+            threadPool->addTask(eventInfo->callBack, eventInfo->arg);
         }
     }
     return n;

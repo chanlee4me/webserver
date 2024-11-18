@@ -10,17 +10,10 @@ ThreadPool::~ThreadPool() {
 void ThreadPool::createThreadPool() {
     do {
         threadPoolData = new ThreadPoolData();
-        if (threadPoolData == NULL) {
-            cout << "创建线程池失败" << endl;
+        if (threadPoolData == nullptr) {
+            cerr << "创建线程池失败" << endl;
             break;
         }
-        threadPoolData->maxThreadSize = 8;
-        threadPoolData->liveThreadNum = 2;
-        threadPoolData->busyThreadNum = 0;
-        threadPoolData->waitExitThreadNum = 0;
-
-        threadPoolData->taskQueueMaxSize = 10;
-        threadPoolData->isRunning = true;
 
         /*根据最大线程上限，为工作线程数组分配空间*/
         threadPoolData->threads.resize(threadPoolData->maxThreadSize);
@@ -53,33 +46,36 @@ void ThreadPool::createThreadPool() {
         }else{
             cout << "创建管理线程" << endl;
         }
+        cout << "线程池创建完成" << endl;
+        return;
     } while (0);
+    cout << "线程池创建失败" << endl;
 }
 
 
 // 管理线程回调函数
 void* ThreadPool::adjustThreadPool(void *arg){
-    ThreadPoolData *threadPoolData = static_cast<ThreadPoolData*>(arg);
-    pthread_mutex_t mutex = threadPoolData->mutex;
-    while (threadPoolData->isRunning)
+    ThreadPoolData *_threadPoolData = static_cast<ThreadPoolData*>(arg);
+    pthread_mutex_t mutex = _threadPoolData->mutex;
+    while (_threadPoolData->isRunning)
     {
         /* 定时对线程池进行管理 */
         sleep(10);
         /* 加锁 */
         pthread_mutex_lock(&mutex);
         /* 获取数据 */
-        int minThreadSize = threadPoolData->MIN_THREAD_SIZE;//线程池最小线程数
-        int maxThreadSize = threadPoolData->maxThreadSize;//线程池最大线程数
-        int taskQueueSize = threadPoolData->taskQueue.size();//当前任务数
-        int liveThreadNum = threadPoolData->liveThreadNum;//存活线程数
-        int busyThreadNum = threadPoolData->busyThreadNum;//忙线程数  
+        int minThreadSize = _threadPoolData->MIN_THREAD_SIZE;//线程池最小线程数
+        int maxThreadSize = _threadPoolData->maxThreadSize;//线程池最大线程数
+        int taskQueueSize = _threadPoolData->taskQueue.size();//当前任务数
+        int liveThreadNum = _threadPoolData->liveThreadNum;//存活线程数
+        int busyThreadNum = _threadPoolData->busyThreadNum;//忙线程数  
         /* 判断是否创建新线程：任务数小于线程池最小线程数，且存活的线程数小于线程池最大线程数 */
         if(taskQueueSize > minThreadSize && liveThreadNum < maxThreadSize){
             /* 一次性增加DEFAULT_THREAD_NUM个线程 */
             int count = 0;
             for(int i = 0; i < maxThreadSize && count < DEFAULT_THREAD_NUM && liveThreadNum < maxThreadSize; i++){
-                if(threadPoolData->threads[i] != 0){
-                    if(pthread_create(&threadPoolData->threads[i], NULL, workerThread, (void *)threadPoolData) == 0){
+                if(_threadPoolData->threads[i] != 0){
+                    if(pthread_create(&_threadPoolData->threads[i], NULL, workerThread, (void *)_threadPoolData) == 0){
                         count++;
                         liveThreadNum++;
                     }else{
@@ -98,10 +94,10 @@ void* ThreadPool::adjustThreadPool(void *arg){
                     采取的方式是通知那些阻塞在等待任务条件变量上的线程，让他们自行判断是否需要自行销毁
              */
             pthread_mutex_lock(&mutex);
-            threadPoolData->waitExitThreadNum = DEFAULT_THREAD_NUM;
+            _threadPoolData->waitExitThreadNum = DEFAULT_THREAD_NUM;
             pthread_mutex_unlock(&mutex);
             for(int i = 0; i < DEFAULT_THREAD_NUM; i++){
-                pthread_cond_signal(&threadPoolData->queueNotEmpty);
+                pthread_cond_signal(&_threadPoolData->queueNotEmpty);
             }
         }
 
@@ -110,30 +106,30 @@ void* ThreadPool::adjustThreadPool(void *arg){
 }
 //子线程回调函数
 void* ThreadPool::workerThread(void *arg){
-    ThreadPoolData *threadPoolData = static_cast<ThreadPoolData*>(arg);
-    pthread_mutex_t mutex = threadPoolData->mutex;
-    pthread_mutex_t counterMutex = threadPoolData->counterMutex;
+    ThreadPoolData *_threadPoolData = static_cast<ThreadPoolData*>(arg);
+    pthread_mutex_t mutex = _threadPoolData->mutex;
+    pthread_mutex_t counterMutex = _threadPoolData->counterMutex;
     threadpoolTask task;
-    while(threadPoolData->isRunning){
+    while(_threadPoolData->isRunning){
         /* 加锁 */
         pthread_mutex_lock(&mutex);
         /* 当任务队列里无任务时，阻塞在while中 */
-        while(threadPoolData->taskQueue.empty() && threadPoolData->isRunning){
+        while(_threadPoolData->taskQueue.empty() && _threadPoolData->isRunning){
             /* 等待条件变量 */
-            pthread_cond_wait(&threadPoolData->queueNotEmpty, &mutex);
+            pthread_cond_wait(&_threadPoolData->queueNotEmpty, &mutex);
             /* 清除空闲状态的线程 */
-            if(threadPoolData->waitExitThreadNum > 0){
-                threadPoolData->waitExitThreadNum--;
+            if(_threadPoolData->waitExitThreadNum > 0){
+                _threadPoolData->waitExitThreadNum--;
                 /* 若当前存活线程个数大于最小线程数，则可以结束当前线程 */
-                if(threadPoolData->liveThreadNum > threadPoolData->MIN_THREAD_SIZE){
+                if(_threadPoolData->liveThreadNum > _threadPoolData->MIN_THREAD_SIZE){
                     //Q：退出时，threadPoolData->threads数组中的相应元素值需要置0，怎么才能找到该元素
                     //A：利用 pthread_self()来查找其在 threads 数组中相应位置
-                    for(int i = 0; i < threadPoolData->threads.size(); i++){
-                        if(threadPoolData->threads[i] == pthread_self()){
-                            threadPoolData->threads[i] = 0;
+                    for(int i = 0; i < _threadPoolData->threads.size(); i++){
+                        if(_threadPoolData->threads[i] == pthread_self()){
+                            _threadPoolData->threads[i] = 0;
                         }
                     }
-                    threadPoolData->liveThreadNum--;
+                    _threadPoolData->liveThreadNum--;
                     pthread_mutex_unlock(&mutex);
                     cout << "线程" << pthread_self() << "终止" << endl;
                     pthread_exit(nullptr);
@@ -141,31 +137,31 @@ void* ThreadPool::workerThread(void *arg){
             }
         }
         /* 关闭线程池*/
-        if(!threadPoolData->isRunning){
-            threadPoolData->liveThreadNum--;
+        if(!_threadPoolData->isRunning){
+            _threadPoolData->liveThreadNum--;
             pthread_mutex_unlock(&mutex);
             cout << "线程" << pthread_self() << "退出" << endl;
             pthread_exit(NULL);
         }
         /* 从任务队列中取出一个任务 */
-        task.callBack = threadPoolData->taskQueue.front().callBack;
-        task.arg = threadPoolData->taskQueue.front().arg;
+        task.callBack = _threadPoolData->taskQueue.front().callBack;
+        task.arg = _threadPoolData->taskQueue.front().arg;
         /* 从任务队列中删除一个任务 */
-        threadPoolData->taskQueue.pop_front();
+        _threadPoolData->taskQueue.pop_front();
         /* 通知新任务可以进入任务队列中 */
-        pthread_cond_broadcast(&threadPoolData->queueNotFull);
+        pthread_cond_broadcast(&_threadPoolData->queueNotFull);
         /* 释放锁 */
         pthread_mutex_unlock(&mutex);
         /* 执行任务 */
         cout << "线程" << pthread_self() << "开始执行任务" << endl;
         pthread_mutex_lock(&counterMutex);      //加锁
-        threadPoolData->busyThreadNum++; //忙线程数+1
+        _threadPoolData->busyThreadNum++; //忙线程数+1
         pthread_mutex_unlock(&counterMutex);    //解锁
         task.callBack(task.arg);    //执行任务
         /* 任务执行完毕 */
         cout << "线程" << pthread_self() << "任务执行完毕" << endl;
         pthread_mutex_lock(&counterMutex);      //加锁
-        threadPoolData->busyThreadNum--; //忙线程数-1
+        _threadPoolData->busyThreadNum--; //忙线程数-1
         pthread_mutex_unlock(&counterMutex);    //解锁
     }
     pthread_exit(NULL);

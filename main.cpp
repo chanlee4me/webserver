@@ -3,7 +3,7 @@
 
 
 int main(){
-    Server server;
-    server.start();
+    Server* server = new Server();
+    server->start();
     return 0;
 }

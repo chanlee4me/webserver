@@ -32,7 +32,7 @@ public:
     bool addEvent(int events, EventInfo* eventInfo);//添加fd到监听红黑树上
     bool delEvent(EventInfo* eventInfo);//摘除fd到监听红黑树上
     bool modEvent(int events, EventInfo* eventInfo);//修改监听红黑树上的fd
-    int waitEvent(int maxEvents, epoll_event* events, int timeout);//阻塞监听红黑树上的事件
+    int waitEvent(ThreadPool *threadPool, int maxEvents, epoll_event* events, int timeout);//阻塞监听红黑树上的事件
 };
 
 #endif
