@@ -8,10 +8,27 @@ Server::Server()
     tempEvent = new epoll_event;
     myEpoll = new Epoll(OPEN_MAX);                        //初始化epoll监听红黑树
     threadPool = new ThreadPool();                        //初始化线程池
+    if(threadPool == nullptr){
+        delete myEpoll;
+        myEpoll = nullptr;
+        delete tempEvent;
+        tempEvent = nullptr;
+        throw std::runtime_error("线程池初始化失败");
+    }
+
 }
 Server::~Server() { // 添加析构函数定义
     if (listenFd != -1) {
         close(listenFd);
+    }
+    if (myEpoll != nullptr) {
+        delete myEpoll;
+    }
+    if (threadPool != nullptr) {
+        delete threadPool;
+    }
+    if (tempEvent != nullptr) {
+        delete tempEvent;
     }
 }
 //初始化监听事件

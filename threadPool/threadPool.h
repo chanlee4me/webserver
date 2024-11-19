@@ -16,10 +16,11 @@ class ThreadPool {
     struct threadpoolTask {        // 子线程任务
         function<void(void *)> callBack;
         void *arg;                 /* 上面函数的参数 */
+        
     };
     struct ThreadPoolData {            // 线程池数据
         pthread_mutex_t mutex;         // 互斥锁--用于锁住本结构体
-        pthread_mutex_t counterMutex;         // 互斥锁--用于锁住忙线程数busyThreadNum
+        pthread_mutex_t counterMutex;   // 互斥锁--用于锁住忙线程数busyThreadNum
         pthread_cond_t queueNotEmpty;  // 条件变量--任务队列不为空
         pthread_cond_t queueNotFull;   // 条件变量--任务队列不为满
     
@@ -37,24 +38,15 @@ class ThreadPool {
     
         bool isRunning;  // 线程池是否运行
     
-        ThreadPoolData() 
-            :   adjustThreadId(1),
-                MIN_THREAD_SIZE(2), 
-                maxThreadSize(4), 
-                liveThreadNum(0), 
-                busyThreadNum(0), 
-                waitExitThreadNum(0), 
-                taskQueueMaxSize(100), 
-                isRunning(true)      
-        {}
+        ThreadPoolData();
+        ~ThreadPoolData();
     };
-    
     ThreadPoolData *threadPoolData;
 
    public:
     ThreadPool();
     ~ThreadPool();
-    void createThreadPool();
+    bool createThreadPool();
     void destoryThreadPool();  // 销毁线程池
     void addTask(function<void(void *)> callBack, void *arg);            // 添加任务
     static void* adjustThreadPool(void *arg);  // 管理线程回调函数

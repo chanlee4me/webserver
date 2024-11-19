@@ -3,7 +3,13 @@
 
 
 int main(){
-    Server* server = new Server();
-    server->start();
+    try{
+        Server* server = new Server();
+        server->start();
+        delete server;
+    }catch(const std::exception& e){
+        std::cerr << e.what() << std::endl;
+        return -1;
+    }
     return 0;
 }
