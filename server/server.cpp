@@ -2,20 +2,15 @@
 
 
 using namespace std;
-Server::Server()
-{
+Server::Server(){
     listenFd = -1;
+    nReady = 0;
+    flag = 0;
+    memset(events, 0, sizeof(events));
+    memset(myEvents, 0, sizeof(myEvents));
     tempEvent = new epoll_event;
     myEpoll = new Epoll(OPEN_MAX);                        //初始化epoll监听红黑树
     threadPool = new ThreadPool();                        //初始化线程池
-    if(threadPool == nullptr){
-        delete myEpoll;
-        myEpoll = nullptr;
-        delete tempEvent;
-        tempEvent = nullptr;
-        throw std::runtime_error("线程池初始化失败");
-    }
-
 }
 Server::~Server() { // 添加析构函数定义
     if (listenFd != -1) {
@@ -61,7 +56,6 @@ void Server::acceptConnect(){
         }
         if(i == MAX_EVENTS){
             cerr << "connectFd is full" << endl;
-            close(connectFd);
             break;
         }
     

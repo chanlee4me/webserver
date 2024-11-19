@@ -20,7 +20,7 @@ class ThreadPool {
     };
     struct ThreadPoolData {            // 线程池数据
         pthread_mutex_t mutex;         // 互斥锁--用于锁住本结构体
-        pthread_mutex_t counterMutex;   // 互斥锁--用于锁住忙线程数busyThreadNum
+        // pthread_mutex_t counterMutex;   // 互斥锁--用于锁住忙线程数busyThreadNum
         pthread_cond_t queueNotEmpty;  // 条件变量--任务队列不为空
         pthread_cond_t queueNotFull;   // 条件变量--任务队列不为满
     

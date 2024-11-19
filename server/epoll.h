@@ -13,8 +13,6 @@ class Epoll
 private:
     int epfd;   //指向监听红黑树根节点的文件描述符
 
-    bool create(int size);               //创建监听红黑树
-
 public:
     struct EventInfo{                 //自定义的用于epoll反应堆的结构体
         int fd; //要监听的文件描述符
@@ -25,6 +23,8 @@ public:
         int status; //是否处于监听态：1->在红黑树上(监听), 0->不在(不监听) 
         char buf[BUFF_SIZE];
         long lastActive;    //记录加入红黑树的时间
+        EventInfo();
+        ~EventInfo();
     };  
     Epoll();
     Epoll(int size);                     //size:监听节点数量

@@ -1,27 +1,34 @@
 #include "epoll.h"
 using namespace std;
+Epoll::EventInfo::EventInfo(){
+    fd = -1;
+    events = 0;
+    arg = nullptr;
+    callBack = nullptr;
+    status = 0;
+    memset(buf, 0, sizeof(buf));
+    lastActive = 0;
+}
+Epoll::EventInfo::~EventInfo() {
+    
+}
 Epoll::Epoll()
 {
     epfd = -1;
 }
 Epoll::Epoll(int size)
 {   //构造监听红黑树
-    create(size);
+    epfd = epoll_create(size);
+    if(epfd == -1){
+        cerr << "epoll_create error:" << strerror(errno) << endl;
+    }
 }
 Epoll::~Epoll() { 
     if (epfd != -1) {
         close(epfd);
     }
 }
-bool Epoll::create(int size){
-    //创建监听红黑树
-    epfd = epoll_create(size);
-    if(epfd == -1){
-        cerr << "epoll_create error:" << strerror(errno) << endl;
-        return false;
-    }
-    return true;
-}
+
 
 bool Epoll::addEvent(int events, EventInfo* eventInfo){
     epoll_event tempEvent;
