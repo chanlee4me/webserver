@@ -37,7 +37,7 @@ void Server::initListen(){
     bool init = true;
     setEventInfo(&myEvents[OPEN_MAX], listenFd, bind(&Server::acceptConnect, this), &myEvents[OPEN_MAX], init); //设置回调函数和监听的fd
     myEpoll->addEvent(events, &myEvents[OPEN_MAX]);    //将listenFd添加到监听红黑树上
-    printf("======服务器初始化成功，启动监听======\n");
+    printf("======server init successfully======\n");
 }
 //与客户端建立连接
 void Server::acceptConnect(){
