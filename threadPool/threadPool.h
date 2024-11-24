@@ -21,9 +21,8 @@ class ThreadPool {
     };
     struct ThreadPoolData {            // 线程池数据
         pthread_mutex_t mutex;         // 互斥锁--用于锁住本结构体
-        pthread_mutex_t taskMutex;         // 互斥锁--用于锁住任务队列
         pthread_cond_t queueNotEmpty;  // 条件变量--任务队列不为空
-        pthread_cond_t queueNotFull;   // 条件变量--任务队列不为满
+        // pthread_cond_t queueNotFull;   // 条件变量--任务队列不为满
     
         vector<pthread_t> threads;        // 存放线程池中每个线程的id
         pthread_t adjustThreadId;             // 存放管理线程的id
@@ -35,7 +34,7 @@ class ThreadPool {
         int busyThreadNum;      // 线程池中正在工作的线程数
         int waitExitThreadNum;  // 等待销毁的线程数
     
-        const int taskQueueMaxSize;  // 任务队列中可容纳任务数上限
+        // const int taskQueueMaxSize;  // 任务队列中可容纳任务数上限
     
         bool isRunning;  // 线程池是否运行
     

@@ -49,7 +49,7 @@ void Server::acceptConnect(){
         return;
     }
     do{ 
-        printf("=====有新客户端加入连接=====\n");
+        printf("=====new client connect=====\n");
         int i;
         for(i = 0; i < MAX_EVENTS; i++){    //找到 myEvents中空闲的位置
             if(myEvents[i].status == 0) break;

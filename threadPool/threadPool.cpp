@@ -12,23 +12,21 @@ ThreadPool::ThreadPoolData::ThreadPoolData()
       liveThreadNum(0), 
       busyThreadNum(0), 
       waitExitThreadNum(0), 
-      taskQueueMaxSize(20), 
+    //   taskQueueMaxSize(20), 
       isRunning(true)      
 {     
     bool initSuccess = true;
     do{
         if (pthread_mutex_init(&mutex, NULL) != 0 || 
-            pthread_mutex_init(&taskMutex, NULL) != 0 ||
-            pthread_cond_init(&queueNotEmpty, NULL) != 0 ||
-            pthread_cond_init(&queueNotFull, NULL) != 0) {
-            cerr << "初始化互斥锁或条件变量失败" << strerror(errno) << endl;
+            pthread_cond_init(&queueNotEmpty, NULL) != 0) {
+            cerr << "failed to initialize Mutex or conditionnal variable" << strerror(errno) << endl;
             initSuccess = false;
             break;
         }
         /*根据最大线程上限，为工作线程数组分配空间*/
         threads.resize(maxThreadSize);
         if(threads.size() != maxThreadSize){
-            cerr << "线程数组分配空间失败" << endl;
+            cerr << "failed to initialize threads array" << endl;
             initSuccess = false;
             break;
         }else{
@@ -43,7 +41,7 @@ ThreadPool::ThreadPoolData::~ThreadPoolData(){
     pthread_mutex_destroy(&mutex);
     // pthread_mutex_destroy(&counterMutex);
     pthread_cond_destroy(&queueNotEmpty);
-    pthread_cond_destroy(&queueNotFull);
+    // pthread_cond_destroy(&queueNotFull);
 }
 ThreadPool::ThreadPool() {
     do {
@@ -58,12 +56,12 @@ ThreadPool::ThreadPool() {
                 threadPoolData->liveThreadNum++;
                 pthread_mutex_unlock(&mutex);
             }else{
-                cerr << "创建线程失败" << strerror(errno) << endl;
+                cerr << "create thread error" << strerror(errno) << endl;
             }
         }
         // 创建管理线程
         if(pthread_create(&threadPoolData->adjustThreadId, NULL, adjustThreadPool, (void *)threadPoolData)){
-            cerr << "创建管理线程失败" << strerror(errno) << endl;
+            cerr << "create manager thread error" << strerror(errno) << endl;
             break;
         }else{
             cout << "create adjustThread" << endl;
@@ -93,7 +91,7 @@ void* ThreadPool::adjustThreadPool(void *arg){
     pthread_mutex_t mutex = _threadPoolData->mutex;
     while (_threadPoolData->isRunning){
         /* 定时对线程池进行管理 */
-        sleep(10);
+        sleep(5);
         /* 加锁 */
         pthread_mutex_lock(&mutex);
         /* 获取数据 */
@@ -112,34 +110,35 @@ void* ThreadPool::adjustThreadPool(void *arg){
                         count++;
                         liveThreadNum++;
                     }else{
-                        cerr << "创建线程失败" << strerror(errno) << endl;
+                        cerr << "failed to add new thread" << strerror(errno) << endl;
                     }
                 }
             }
         }
+        pthread_mutex_unlock(&mutex);
         /* 考虑任务队列和线程池负载历史,来决定是否销毁线程 */
-        if(busyThreadNum * 3 < liveThreadNum && liveThreadNum > minThreadSize){
-            // 冷却期：如果销毁线程的条件在过去 3 次判断中都成立，才执行销毁
-            static int destroyCount = 0;
-            destroyCount++;
-            /* 一次销毁DEFAULT_THREAD_NUM个线程 */
-            /* 
-                说明：不是由管理者线程直接销毁，而是由子线程自毁
-                    采取的方式是通知那些阻塞在等待任务条件变量上的线程，让他们自行判断是否需要自行销毁
-             */
-            if(destroyCount >= 3){
-                int waitToExitThreadNum = busyThreadNum * 2 - liveThreadNum;
-                _threadPoolData->waitExitThreadNum = waitToExitThreadNum;
-                pthread_mutex_unlock(&mutex);
-                for(int i = 0; i < waitToExitThreadNum; i++){
-                    pthread_cond_signal(&_threadPoolData->queueNotEmpty);
-                }
-            }else{
-                pthread_mutex_unlock(&mutex);
-            }
-        }else{
-           pthread_mutex_unlock(&mutex);
-        }
+        // if(busyThreadNum * 3 < liveThreadNum && liveThreadNum > minThreadSize){
+        //     // 冷却期：如果销毁线程的条件在过去 3 次判断中都成立，才执行销毁
+        //     static int destroyCount = 0;
+        //     destroyCount++;
+        //     /* 一次销毁DEFAULT_THREAD_NUM个线程 */
+        //     /* 
+        //         说明：不是由管理者线程直接销毁，而是由子线程自毁
+        //             采取的方式是通知那些阻塞在等待任务条件变量上的线程，让他们自行判断是否需要自行销毁
+        //      */
+        //     if(destroyCount >= 3){
+        //         int waitToExitThreadNum = busyThreadNum * 2 - liveThreadNum;
+        //         _threadPoolData->waitExitThreadNum = waitToExitThreadNum;
+        //         pthread_mutex_unlock(&mutex);
+        //         for(int i = 0; i < waitToExitThreadNum; i++){
+        //             pthread_cond_signal(&_threadPoolData->queueNotEmpty);
+        //         }
+        //     }else{
+        //         pthread_mutex_unlock(&mutex);
+        //     }
+        // }else{
+        //    pthread_mutex_unlock(&mutex);
+        // }
     }
     return nullptr;
 }
@@ -147,8 +146,6 @@ void* ThreadPool::adjustThreadPool(void *arg){
 void* ThreadPool::workerThread(void *arg){
     ThreadPoolData *_threadPoolData = static_cast<ThreadPoolData*>(arg);
     pthread_mutex_t mutex = _threadPoolData->mutex;
-    pthread_mutex_t taskMutex = _threadPoolData->taskMutex;
-    // pthread_mutex_t counterMutex = _threadPoolData->counterMutex;
     threadpoolTask task;
     pthread_mutex_lock(&mutex);/* 加锁 */
     while(_threadPoolData->isRunning){
@@ -156,25 +153,13 @@ void* ThreadPool::workerThread(void *arg){
         while(_threadPoolData->isRunning && _threadPoolData->taskQueue.empty()){
             /* 等待条件变量 */
             pthread_cond_wait(&_threadPoolData->queueNotEmpty, &mutex);
-            /* 清除空闲状态的线程 */
-            /* 若当前存活线程个数大于最小线程数，则可以结束当前线程 */
-            if(_threadPoolData->waitExitThreadNum > 0 && _threadPoolData->MIN_THREAD_SIZE){
-                //Q：退出时，threadPoolData->threads数组中的相应元素值需要置0，怎么才能找到该元素
-                //A：利用 pthread_self()来查找其在 threads 数组中相应位置
-                for(int i = 0; i < _threadPoolData->threads.size(); i++){
-                    if(_threadPoolData->threads[i] == pthread_self()){
-                        _threadPoolData->threads[i] = 0;
-                        _threadPoolData->waitExitThreadNum--;
-                        _threadPoolData->liveThreadNum--;
-                        pthread_mutex_unlock(&mutex);
-                        cout << "thread 0x" << pthread_self() << " exit" << endl;
-                        pthread_exit(nullptr);
-                    }
-                }
-            }
+            
+            /* 
+                清除空闲状态的线程:若当前存活线程个数大于最小线程数，则可以结束当前线程
+                To be continued...
+            */
+ 
         }
-        pthread_mutex_unlock(&mutex);
-        pthread_mutex_lock(&mutex);/* 加锁 */
         /* 关闭线程池*/
         if(!_threadPoolData->isRunning){
             _threadPoolData->liveThreadNum--;
@@ -182,49 +167,52 @@ void* ThreadPool::workerThread(void *arg){
             cout << "thread 0x" << pthread_self() << " exit" << endl;
             pthread_exit(nullptr);
         }
-        pthread_mutex_unlock(&mutex);
         /* 从任务队列中取出一个任务 */
-        pthread_mutex_lock(&taskMutex);
         task.callBack = _threadPoolData->taskQueue.front().callBack;
         task.arg = _threadPoolData->taskQueue.front().arg;
         /* 从任务队列中删除一个任务 */
         _threadPoolData->taskQueue.pop_front();
-        pthread_mutex_unlock(&taskMutex);
-        /* 通知新任务可以进入任务队列中 */
-        pthread_cond_signal(&_threadPoolData->queueNotFull);
+
+        /* 
+            通知新任务可以进入任务队列中 
+            To be continued...
+        */
+
         /* 执行任务 */
-        pthread_mutex_lock(&mutex);      //加锁
-        cout << "thread" << pthread_self() << "start working" << endl;
         _threadPoolData->busyThreadNum++; //忙线程数+1
         pthread_mutex_unlock(&mutex);    //解锁
+
+        cout << "thread 0x" << pthread_self() << "start working" << endl;
         task.callBack(task.arg);    //执行任务
-        /* 任务执行完毕 */
+
         pthread_mutex_lock(&mutex);      //加锁
-        cout << "thread" << pthread_self() << "finished woking" << endl;
         _threadPoolData->busyThreadNum--; //忙线程数-1
         pthread_mutex_unlock(&mutex);    //解锁
+        cout << "thread 0x" << pthread_self() << "finished woking" << endl;
     }
-    // pthread_exit(NULL);
+    pthread_exit(NULL);
     return nullptr;
 }
 //添加任务
 void ThreadPool::addTask(function<void(void *)> callBack, void *arg){
-    pthread_mutex_t taskMutex = threadPoolData->taskMutex;
+    pthread_mutex_t mutex = threadPoolData->mutex;
     /* 如果线程池已经停止运行，不能再添加任务 */ 
     if(!threadPoolData->isRunning) {
         return;
     }
-    pthread_mutex_lock(&taskMutex);
-    /* 队列已满，调用 wait 阻塞 */
-    if(threadPoolData->taskQueue.size() == threadPoolData->taskQueueMaxSize){
-        pthread_cond_wait(&threadPoolData->queueNotFull, &taskMutex);
-    }
+    pthread_mutex_lock(&mutex);
+
+    /* 
+        队列已满，调用 wait 阻塞
+        To be continued...
+     */
+
     /* 添加任务 */
     threadpoolTask task;
     task.arg = arg;
     task.callBack = callBack;
     threadPoolData->taskQueue.push_back(task);
-    pthread_mutex_unlock(&taskMutex);
+    pthread_mutex_unlock(&mutex);
     /* 通知线程有任务到来 */
     pthread_cond_signal(&threadPoolData->queueNotEmpty);
 }

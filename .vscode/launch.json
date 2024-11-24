@@ -8,7 +8,8 @@
             "name": "(gdb) 启动",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/webserver",//指待调试的程序,其值对应程序的路径
+            // "program": "${workspaceFolder}/webserver",//指待调试的程序,其值对应程序的路径
+            "program": "${workspaceFolder}/buffer/buffer_test",//指待调试的程序,其值对应程序的路径
             "args": [],
             "stopAtEntry": true,//将stopAtEntry值更改为 true 将使调试器在开始调试时停止在 main 方法上
             "cwd": "${fileDirname}",
