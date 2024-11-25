@@ -37,7 +37,12 @@ public:
     inline size_t prependableBytes() const{
         return readIndex;
     }
-
+    size_t getReadIndex() const{
+        return readIndex;
+    }
+    size_t getWriteIndex() const{
+        return writeIndex;
+    }
     // Append data to the buffer
     void append(const char* data, size_t len);
     // Prepend data to the buffer
