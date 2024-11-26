@@ -1,57 +1,44 @@
 #include "http.h"
-#include <cassert>
+#include "../buffer/buffer.h"
 #include <iostream>
+#include <cstring>
 
-void testParseLine()
-{
-    {
-        // Test case 1: Normal line ending with \r\n
-        Buffer buffer;
-        buffer.append("GET / HTTP/1.1\r\n", sizeof("GET / HTTP/1.1\r\n") - 1);
-        assert(parseLine(&buffer) == LINE_OK);
-        assert(buffer.readableBytes() == 0);
+int main() {
+    Buffer buffer;
+    const char* testStr1 = "GET /index.html HTTP/1.1\r\n";
+    const char* testStr2 = "GET /about.html HTTP/1.1\r";
+    const char* testStr3 = "POST /submit HTTP/1.1\n";
+    const char* testStr4 = "HEAD / HTTP/1.1\r\n\r";
+    const char* testStr5 = "OPTIONS * HTTP/1.1\r\nExtraData";
+    const char* testStr6 = "\r\n";
+    const char* testStr7 = "";
+    struct TestCase {
+        const char* data;
+        const char* description;
+        LINE_STATUS expected;
+    } testCases[] = {
+        { testStr1, "正常的请求行，结尾为\\r\\n", LINE_OK },
+        { testStr2, "仅有\\r结尾的请求行", LINE_OPEN },
+        { testStr3, "仅有\\n结尾的请求行", LINE_BAD },
+        { testStr4, "多余\\r的请求行", LINE_OK },
+        { testStr5, "请求行后有多余数据", LINE_OK },
+        { testStr6, "仅有\\r\\n的空行", LINE_OK },
+        { testStr7, "空字符串", LINE_OPEN },
+    };
+    for (const auto& testCase : testCases) {
+        buffer.retrieveAll();
+        buffer.append(testCase.data, strlen(testCase.data));
+        int checkedIndex = 0;
+        int readIndex = buffer.readableBytes();
+        LINE_STATUS result = parseLine(&buffer, checkedIndex, readIndex);
+        std::cout << "测试用例: " << testCase.description << std::endl;
+        std::cout << "预期结果: " << testCase.expected << ", 实际结果: " << result << std::endl;
+        if(result == testCase.expected) {
+            std::cout << "测试通过" << std::endl;
+        } else {
+            std::cout << "测试失败" << std::endl;
+        }
+        std::cout << "解析后 checkedIndex 值: " << checkedIndex << std::endl << std::endl;
     }
-
-    {
-        // Test case 2: Line ending with \n only
-        Buffer buffer;
-        buffer.append("GET / HTTP/1.1\n", sizeof("GET / HTTP/1.1\n") - 1);
-        assert(parseLine(&buffer) == LINE_BAD);
-    }
-
-    {
-        // Test case 3: Line ending with \r only
-        Buffer buffer;
-        buffer.append("GET / HTTP/1.1\r", sizeof("GET / HTTP/1.1\r") - 1);
-        assert(parseLine(&buffer) == LINE_OPEN);
-    }
-
-    {
-        // Test case 4: Incomplete line
-        Buffer buffer;
-        buffer.append("GET / HTTP/1.1", sizeof("GET / HTTP/1.1") - 1);
-        assert(parseLine(&buffer) == LINE_OPEN);
-    }
-
-    {
-        // Test case 5: Empty buffer
-        Buffer buffer;
-        assert(parseLine(&buffer) == LINE_OPEN);
-    }
-
-    {
-        // Test case 6: Line with \r\n in the middle
-        Buffer buffer;
-        buffer.append("GET / HTTP/1.1\r\nHost: example.com\r\n", sizeof("GET / HTTP/1.1\r\nHost: example.com\r\n") - 1);
-        assert(parseLine(&buffer) == LINE_OK);
-        assert(buffer.readableBytes() == sizeof("Host: example.com\r\n") - 1); // Remaining "Host: example.com\r\n"
-    }
-
-    std::cout << "All tests passed!" << std::endl;
-}
-
-int main()
-{
-    testParseLine();
     return 0;
 }

@@ -58,6 +58,8 @@
         "thread": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "buffer": "cpp",
+        "netfwd": "cpp"
     }
 }

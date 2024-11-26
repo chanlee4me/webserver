@@ -2,6 +2,7 @@
 #define BUFFER_H
 
 #include <vector>
+#include <string>
 #include <cassert>
 using namespace std;
 
@@ -42,6 +43,11 @@ public:
     }
     size_t getWriteIndex() const{
         return writeIndex;
+    }
+
+    const string getString(size_t start, size_t edge) const{
+        assert(edge - start <= readableBytes());
+        return string(&(*buffer.begin()) + start, edge - start);
     }
     // Append data to the buffer
     void append(const char* data, size_t len);

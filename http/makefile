@@ -1,19 +1,25 @@
-CXX = g++
-CXXFLAGS = -Wall -g
+# 指定编译器
+CXX := g++
 
-TARGET = test_http
-SRCS = http.cpp test_http.cpp ../buffer/buffer.cpp 
-OBJS = $(SRCS:.cpp=.o)
+# 编译选项
+CXXFLAGS := -std=c++11 -g -Wall
 
-all: $(TARGET)
+# 可执行文件
+TARGET := testParseHeaders
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+# 源文件
+SRCS := http.cpp testParseHeaders.cpp
 
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $<
+# 头文件目录
+INCLUDES := -I. -I../buffer
 
+# 依赖的源文件
+DEPS := ../buffer/buffer.cpp
+
+# 编译规则
+$(TARGET): $(SRCS) $(DEPS)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(TARGET) $(SRCS) $(DEPS)
+
+# 清理
 clean:
-	rm -f $(OBJS) $(TARGET)
-
-.PHONY: all clean
+	rm -f $(TARGET)

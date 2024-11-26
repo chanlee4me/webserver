@@ -1,3 +1,5 @@
+#ifndef HTTP_H
+#define HTTP_H
 #include <iostream>
 #include "../buffer/buffer.h"
 
@@ -7,7 +9,7 @@ enum CHECK_STATE{
 };
 /* 从状态机状态 */
 enum LINE_STATUS{
-    LINE_OK = 0,//读取到完整的行（初始）
+    LINE_OK = 0, //读取到完整的行（初始）
     LINE_BAD,   //行出错
     LINE_OPEN   //行数据尚不完整
 };
@@ -24,4 +26,11 @@ enum HTTP_CODE{
 };
 
 /* 从状态机：解析出一行内容 */
-LINE_STATUS parseLine(Buffer *buffer);
+LINE_STATUS parseLine(Buffer *buffer, int& checkedIndex, int& edgeIndex);
+/* 主状态机：分析 HTTP 请求入口函数 */
+HTTP_CODE parseContent(Buffer *buffer, int& checkedIndex, int& edgeIndex, CHECK_STATE &checkState, int& stareLine);
+/* 主状态机：解析请求行 */
+HTTP_CODE parseRequestLine(Buffer *buffer, const int startIndex, const int edgeIndex, CHECK_STATE &checkState);
+/* 主状态机；解析消息头 */
+HTTP_CODE parseHeaders(Buffer *buffer, const int startIndex, const int edgeIndex, CHECK_STATE &checkState);
+#endif
