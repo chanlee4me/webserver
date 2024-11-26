@@ -3,5 +3,7 @@
 ./buffer/*.o
 ./buffer/buffer_test.*
 ./buffer/test_buffer.*
+
+./http/*.o
 *.o
 webserver

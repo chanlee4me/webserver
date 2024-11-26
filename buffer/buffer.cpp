@@ -31,7 +31,7 @@ void Buffer::append(const char* data, size_t len){
     }
     /* insert new data */
     assert(writableBytes() >= len);
-    buffer.insert(buffer.begin() + writeIndex, data, data + len);
+    std::copy(data, data + len, buffer.begin() + writeIndex);
     /* update the index */
     writeIndex += len;
 }
