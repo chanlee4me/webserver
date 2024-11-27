@@ -1,5 +1,6 @@
 #include "httpContent.h"
 using namespace std;
+
 bool HttpContent::parseRequest(Buffer* buffer){
     bool ok = true;
     bool hasMore = true;
@@ -29,6 +30,8 @@ bool HttpContent::parseRequest(Buffer* buffer){
                 }else{
                     //空行
                     state = BODY;
+                    //fixme
+                    hasMore = false;
                 }
                 buffer->retrieveUntil(crlf + 2);
             }

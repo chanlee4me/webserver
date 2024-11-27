@@ -20,26 +20,32 @@ public:
     enum Version{
         kUnknown, kHttp10, kHttp11
     };
-    
-    HttpRequest();
-    ~HttpRequest();
+    HttpRequest()
+        : method(kInvalid),
+          path(""),
+          query(""),
+          version(kUnknown),
+          headers(),
+          post() 
+    {}
+
 
     Method getMethod() const;
     bool setMethod(const char* start, const char* end);
 
-    string getPath();
+    string getPath() const;
     void setPath(const char* start, const char* end);
 
-    string getQuery();
+    string getQuery() const;
     void setQuery(const char* start, const char* end);
 
-    Version getVersion();
+    Version getVersion() const;
     void setVersion(int v);
 
-    string getHeader(const string &key);
+    string getHeader(const string &key) const;
     void addHeader(string& key, string& value);
 
-    string getPost(const string &key);
+    string getPost(const string &key) const;
     bool setPost(const char* start, const char* end);
 
     

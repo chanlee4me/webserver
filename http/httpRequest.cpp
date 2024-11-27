@@ -1,6 +1,30 @@
 #include "httpRequest.h"
 using namespace std;
 
+HttpRequest::Method HttpRequest::getMethod() const{
+    return method;
+}
+
+string HttpRequest::getPath() const{
+    return path;
+}
+
+string HttpRequest::getQuery() const{
+    return query;
+}
+
+HttpRequest::Version HttpRequest::getVersion() const{
+    return version;
+}
+
+string HttpRequest::getHeader(const string &key) const{
+    return headers.at(key);
+}
+
+string HttpRequest::getPost(const string &key) const{
+    return post.at(key);
+}
+
 
 bool HttpRequest::setMethod(const char* start, const char* end){
     assert(method == kInvalid);
