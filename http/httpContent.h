@@ -1,3 +1,5 @@
+#ifndef HTTP_CONTENT_H
+#define HTTP_CONTENT_H
 #include "httpRequest.h"
 class HttpContent{
 public:
@@ -18,3 +20,4 @@ private:
     HttpRequest request;
     PARSE_STATE state;
 };
+#endif

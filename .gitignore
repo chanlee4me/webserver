@@ -1,8 +1,6 @@
 .vscode
 test*.*
-*test.*
-test*
-./test/stressTest
+./test
 ./buffer/*.o
 ./buffer/buffer_test.*
 *.o

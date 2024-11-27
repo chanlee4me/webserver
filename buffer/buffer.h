@@ -43,6 +43,10 @@ public:
     }
     // Append data to the buffer
     void append(const char* data, size_t len);
+
+    void append(const string& str){
+        append(str.c_str(), str.size());
+    }
     // Prepend data to the buffer
     void prepend(const char* data, size_t len);
     // Retrieve data from the buffer

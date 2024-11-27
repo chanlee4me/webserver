@@ -43,7 +43,7 @@ public:
     void setVersion(int v);
 
     string getHeader(const string &key) const;
-    void addHeader(string& key, string& value);
+    void addHeader(const string& key, const string& value);
 
     string getPost(const string &key) const;
     bool setPost(const char* start, const char* end);

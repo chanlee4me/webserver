@@ -18,16 +18,22 @@ HttpRequest::Version HttpRequest::getVersion() const{
 }
 
 string HttpRequest::getHeader(const string &key) const{
-    return headers.at(key);
+    auto it = headers.find(key);
+    if (it != headers.end()) {
+        return it->second;
+    }
+    return "";
 }
 
 string HttpRequest::getPost(const string &key) const{
-    return post.at(key);
+    auto it = post.find(key);
+    if (it != post.end()) {
+        return it->second;
+    }
+    return "";
 }
-
-
 bool HttpRequest::setMethod(const char* start, const char* end){
-    assert(method == kInvalid);
+    assert(method == kInvalid && "Method should be invalid initially");
     string m(start, end);
     if(m == "GET"){
         method = kGet;
@@ -63,6 +69,6 @@ void HttpRequest::setVersion(int v){
     }
 }
 
-void HttpRequest::addHeader(string& key, string& value){
+void HttpRequest::addHeader(const string& key, const string& value){
     headers[key] = value;
 }
