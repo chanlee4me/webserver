@@ -2,6 +2,8 @@
 #include "buffer.h"
 
 using namespace std;
+const char Buffer::kCRLF[] = "\r\n";
+
 Buffer::Buffer()
     : readIndex(kCheapPrepend),
       writeIndex(kCheapPrepend),
@@ -49,7 +51,11 @@ void Buffer::prepend(const char* data, size_t len){
 
 void Buffer::retrieve(size_t len){
     assert(len <= readableBytes());
-    readIndex += len;
+    if(len < readableBytes()){
+        readIndex += len;
+    }else{
+        retrieveAll();
+    }
 }
 void Buffer::retrieveAll(){
     readIndex = kCheapPrepend;
